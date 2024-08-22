@@ -2,6 +2,16 @@
 	"short_name": "Repay Safe yvcrvSTETH",
 	"name": "Repay Safe yvcrvSTETH",
 	"description": "Repay Safe yvcrvSTETH",
+	"icons": [
+	{
+      "src": "logo.png",
+      "sizes": "256x256",
+      "type": "image/png"
+    },
+    {
+	],
 	"start_url": ".",
-	"display": "standalone"
+	"display": "standalone",
+	"theme_color": "#000000",
+	"background_color": "#ffffff"
 }
