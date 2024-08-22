@@ -1,10 +1,22 @@
 import {
-	Address,
+	type Address,
 	encodeAbiParameters,
 	encodeFunctionData,
-	Hex,
+	type Hex,
 	parseEther,
 } from "viem";
+import {
+	AbsoluteCenter,
+	Box,
+	Button,
+	ChakraProvider,
+	Container,
+	FormControl,
+	FormLabel,
+	Input,
+	Text,
+	VStack,
+} from "@chakra-ui/react";
 import { useAccount, useConnect, useDisconnect } from "wagmi";
 import { useSendCalls } from "wagmi/experimental";
 import { degenBoxContract } from "./degenBox";
@@ -107,54 +119,56 @@ function App() {
 	}
 
 	return (
-		<>
-			<div>
-				<h2>Account</h2>
+		<ChakraProvider>
+			<Box height="100vh">
+				<AbsoluteCenter>
+					<Container>
+						<Box>
+							<Text fontSize="2xl">Account</Text>
 
-				<div>
-					status: {account.status}
-					<br />
-					address: {account.address}
-				</div>
-				{account.status === "disconnected" && (
-					<>
-						{connectors
-							.filter(({ name }) => name === "WalletConnect")
-							.map((connector) => (
-								<button
-									key={connector.uid}
-									onClick={() => connect({ connector })}
-									type="button"
-								>
-									{connector.name}
-								</button>
-							))}
-					</>
-				)}
-				{account.status === "connected" && (
-					<button type="button" onClick={() => disconnect()}>
-						Disconnect
-					</button>
-				)}
-			</div>
-			{account.status === "connected" && (
-				<form onSubmit={submit}>
-					<label htmlFor="repayAmount">Repay Amount:</label>
-					<br />
-					<input name="repayAmount" placeholder="0.05" required />
-					<br />
-					<label htmlFor="collateralRemoveAmount">
-						Collateral Remove Amount:
-					</label>
-					<br />
-					<input name="collateralRemoveAmount" placeholder="0.05" />
-					<br />
-					<button type="submit">Send Batch</button>
-				</form>
-			)}
+							<VStack spacing={3} align="start">
+								<Text>Status: {account.status}</Text>
+								<Text>Address: {account.address}</Text>
+							</VStack>
+							{account.status === "disconnected" && (
+								<>
+									{connectors
+										.filter(({ name }) => name === "WalletConnect")
+										.map((connector) => (
+											<Button
+												key={connector.uid}
+												onClick={() => connect({ connector })}
+											>
+												{connector.name}
+											</Button>
+										))}
+								</>
+							)}
+							{account.status === "connected" && (
+								<Button onClick={() => disconnect()}>Disconnect</Button>
+							)}
+						</Box>
+						{account.status === "connected" && (
+							<form onSubmit={submit}>
+								<FormControl id="repayAmount" isRequired>
+									<FormLabel>Repay Amount</FormLabel>
+									<Input name="repayAmount" placeholder="0.05" />
+								</FormControl>
+								<FormControl id="collateralRemoveAmount">
+									<FormLabel>Collateral Remove Amount</FormLabel>
+									<Input name="collateralRemoveAmount" placeholder="0.05" />
+								</FormControl>
+								<Button type="submit" colorScheme="blue" width="100%">
+									Send Batch
+								</Button>
+							</form>
+						)}
 
-			{data !== undefined && data}
-		</>
+						{data !== undefined && <Text>{data}</Text>}
+					</Container>
+				</AbsoluteCenter>
+			</Box>
+		</ChakraProvider>
 	);
 }
 
