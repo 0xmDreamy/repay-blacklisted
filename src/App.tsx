@@ -24,10 +24,12 @@ import { mimContract } from "./mim";
 import { cauldronContract } from "./cauldron";
 import { collateralContract } from "./collateral";
 import { useState } from "react";
+import { useAutoConnect } from "./useAutoConnect";
 
 function App() {
 	const account = useAccount();
 	const { connectors, connect } = useConnect();
+	useAutoConnect();
 	const { disconnect } = useDisconnect();
 	const { data: capabilities } = useCapabilities();
 	const { sendCallsAsync, data } = useSendCalls();
