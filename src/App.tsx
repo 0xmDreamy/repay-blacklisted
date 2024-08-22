@@ -120,51 +120,76 @@ function App() {
 
 	return (
 		<ChakraProvider>
-			<Box height="100vh">
+			<Box width="100vw" height="100vh" bg="gray.50" p={4}>
 				<AbsoluteCenter>
-					<Container>
-						<Box>
-							<Text fontSize="2xl">Account</Text>
+					<Container
+						borderRadius="lg"
+						bg="gray.100"
+						p={6}
+						minW="480px"
+						minH="320px"
+						borderColor="blue.100"
+						borderWidth="2px"
+						display="flex"
+						flexDirection="column"
+						justifyContent="space-between"
+					>
+						<Box p={2}>
+							<Text fontSize="2xl" align="center" mb={2}>
+								Repay Safe yvcrvSTETH
+							</Text>
 
-							<VStack spacing={3} align="start">
+							<VStack spacing={4} align="center">
 								<Text>Status: {account.status}</Text>
-								<Text>Address: {account.address}</Text>
+								{account.address !== undefined && (
+									<Text>Address: {account.address}</Text>
+								)}
 							</VStack>
-							{account.status === "disconnected" && (
-								<>
-									{connectors
-										.filter(({ name }) => name === "WalletConnect")
-										.map((connector) => (
-											<Button
-												key={connector.uid}
-												onClick={() => connect({ connector })}
-											>
-												{connector.name}
-											</Button>
-										))}
-								</>
-							)}
 							{account.status === "connected" && (
-								<Button onClick={() => disconnect()}>Disconnect</Button>
+								<Button
+									colorScheme="red"
+									width="100%"
+									onClick={() => disconnect()}
+									mt={2}
+								>
+									Disconnect
+								</Button>
 							)}
 						</Box>
 						{account.status === "connected" && (
 							<form onSubmit={submit}>
-								<FormControl id="repayAmount" isRequired>
+								<FormControl id="repayAmount" isRequired mt={2}>
 									<FormLabel>Repay Amount</FormLabel>
 									<Input name="repayAmount" placeholder="0.05" />
 								</FormControl>
-								<FormControl id="collateralRemoveAmount">
+								<FormControl id="collateralRemoveAmount" mt={2}>
 									<FormLabel>Collateral Remove Amount</FormLabel>
 									<Input name="collateralRemoveAmount" placeholder="0.05" />
 								</FormControl>
-								<Button type="submit" colorScheme="blue" width="100%">
+								<Button type="submit" colorScheme="blue" width="100%" mt={2}>
 									Send Batch
 								</Button>
 							</form>
 						)}
 
-						{data !== undefined && <Text>{data}</Text>}
+						{data !== undefined && <Text mt={2}>{data}</Text>}
+						{account.status === "disconnected" && (
+							<>
+								{connectors
+									.filter(({ name }) => name === "WalletConnect")
+									.map((connector) => (
+										<Button
+											colorScheme="green"
+											width="100%"
+											key={connector.uid}
+											onClick={() => connect({ connector })}
+											mt={2}
+										>
+											{connector.name}
+										</Button>
+									))}
+							</>
+						)}
 					</Container>
 				</AbsoluteCenter>
 			</Box>
