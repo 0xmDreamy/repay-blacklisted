@@ -1,11 +1,4 @@
 import {
-	type Address,
-	encodeAbiParameters,
-	encodeFunctionData,
-	type Hex,
-	parseEther,
-} from "viem";
-import {
 	AbsoluteCenter,
 	Box,
 	Button,
@@ -17,19 +10,27 @@ import {
 	Text,
 	VStack,
 } from "@chakra-ui/react";
-import { useAccount, useConnect, useDisconnect } from "wagmi";
+import { useState } from "react";
+import {
+	type Address,
+	type Hex,
+	encodeAbiParameters,
+	encodeFunctionData,
+	parseEther,
+} from "viem";
+import { useAccount, useConnect, useConnections, useDisconnect } from "wagmi";
 import { useCapabilities, useSendCalls } from "wagmi/experimental";
-import { degenBoxContract } from "./degenBox";
-import { mimContract } from "./mim";
 import { cauldronContract } from "./cauldron";
 import { collateralContract } from "./collateral";
-import { useState } from "react";
+import { degenBoxContract } from "./degenBox";
+import { mimContract } from "./mim";
 import { useAutoConnect } from "./useAutoConnect";
 
 function App() {
 	const account = useAccount();
 	const { connectors, connect } = useConnect();
 	useAutoConnect();
+	const connections = useConnections();
 	const { disconnect } = useDisconnect();
 	const { data: capabilities } = useCapabilities();
 	const { sendCallsAsync, data } = useSendCalls();
@@ -205,12 +206,14 @@ function App() {
 									mt={2}
 									isDisabled={
 										(repayAmount === "" && collateralRemoveAmount === "") ||
-										capabilities?.[1]?.atomicBatch?.supported !== true ||
+										(capabilities?.[1]?.atomicBatch?.supported !== true &&
+											connections?.[0].connector.id !== "safe") ||
 										pendingWalletUserAction
 									}
 									isLoading={pendingWalletUserAction}
 								>
-									{capabilities?.[1]?.atomicBatch?.supported === true
+									{capabilities?.[1]?.atomicBatch?.supported === true ||
+									connections?.[0].connector.id === "safe"
 										? "Send Batch"
 										: "Unsupported Wallet"}
 								</Button>
