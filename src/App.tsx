@@ -18,19 +18,16 @@ import {
 	encodeFunctionData,
 	parseEther,
 } from "viem";
-import { useAccount, useConnect, useConnections, useDisconnect } from "wagmi";
+import { useAccount, useConnect, useDisconnect } from "wagmi";
 import { useCapabilities, useSendCalls } from "wagmi/experimental";
 import { cauldronContract } from "./cauldron";
 import { collateralContract } from "./collateral";
 import { degenBoxContract } from "./degenBox";
 import { mimContract } from "./mim";
-import { useAutoConnect } from "./useAutoConnect";
 
 function App() {
 	const account = useAccount();
 	const { connectors, connect } = useConnect();
-	useAutoConnect();
-	const connections = useConnections();
 	const { disconnect } = useDisconnect();
 	const { data: capabilities } = useCapabilities();
 	const { sendCallsAsync, data } = useSendCalls();
@@ -206,14 +203,12 @@ function App() {
 									mt={2}
 									isDisabled={
 										(repayAmount === "" && collateralRemoveAmount === "") ||
-										(capabilities?.[1]?.atomicBatch?.supported !== true &&
-											connections?.[0].connector.id !== "safe") ||
+										capabilities?.[1]?.atomicBatch?.supported !== true ||
 										pendingWalletUserAction
 									}
 									isLoading={pendingWalletUserAction}
 								>
-									{capabilities?.[1]?.atomicBatch?.supported === true ||
-									connections?.[0].connector.id === "safe"
+									{capabilities?.[1]?.atomicBatch?.supported === true
 										? "Send Batch"
 										: "Unsupported Wallet"}
 								</Button>
