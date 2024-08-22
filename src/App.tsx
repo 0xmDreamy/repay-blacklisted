@@ -44,38 +44,40 @@ function App() {
 		}[] = [];
 		if (repayAmount !== "") {
 			const amount = parseEther(repayAmount);
-			repayActions.push(7, 2);
-			repayValues.push(0n, 0n);
-			repayDatas.push(
-				encodeAbiParameters([{ type: "int256" }], [amount]),
-				encodeAbiParameters(
-					[{ type: "int256" }, { type: "address" }, { type: "bool" }],
-					[-1n, account.address as Address, true],
-				),
-			);
+			if (amount > 0n) {
+				repayActions.push(7, 2);
+				repayValues.push(0n, 0n);
+				repayDatas.push(
+					encodeAbiParameters([{ type: "int256" }], [amount]),
+					encodeAbiParameters(
+						[{ type: "int256" }, { type: "address" }, { type: "bool" }],
+						[-1n, account.address as Address, true],
+					),
+				);
 
-			repayCalls.push({
-				to: mimContract.address,
-				data: encodeFunctionData({
-					abi: mimContract.abi,
-					functionName: "transfer",
-					args: [degenBoxContract.address, amount],
-				}),
-			});
-			repayCalls.push({
-				to: "0xd96f48665a1410C0cd669A88898ecA36B9Fc2cce",
-				data: encodeFunctionData({
-					abi: degenBoxContract.abi,
-					functionName: "deposit",
-					args: [
-						mimContract.address,
-						degenBoxContract.address,
-						degenBoxContract.address,
-						amount,
-						0n,
-					],
-				}),
-			});
+				repayCalls.push({
+					to: mimContract.address,
+					data: encodeFunctionData({
+						abi: mimContract.abi,
+						functionName: "transfer",
+						args: [degenBoxContract.address, amount],
+					}),
+				});
+				repayCalls.push({
+					to: "0xd96f48665a1410C0cd669A88898ecA36B9Fc2cce",
+					data: encodeFunctionData({
+						abi: degenBoxContract.abi,
+						functionName: "deposit",
+						args: [
+							mimContract.address,
+							degenBoxContract.address,
+							degenBoxContract.address,
+							amount,
+							0n,
+						],
+					}),
+				});
+			}
 		}
 
 		const collateralRemoveActions: number[] = [];
@@ -87,28 +89,30 @@ function App() {
 		}[] = [];
 		if (collateralRemoveAmount !== "") {
 			const amount = parseEther(collateralRemoveAmount);
-			collateralRemoveActions.push(4);
-			collateralRemoveValues.push(0n);
-			collateralRemoveDatas.push(
-				encodeAbiParameters(
-					[{ type: "int256" }, { type: "address" }],
-					[amount, account.address as Address],
-				),
-			);
-			collateralRemoveCalls.push({
-				to: degenBoxContract.address,
-				data: encodeFunctionData({
-					abi: degenBoxContract.abi,
-					functionName: "withdraw",
-					args: [
-						collateralContract.address,
-						account.address as Address,
-						account.address as Address,
-						0n,
-						amount,
-					],
-				}),
-			});
+			if (amount > 0n) {
+				collateralRemoveActions.push(4);
+				collateralRemoveValues.push(0n);
+				collateralRemoveDatas.push(
+					encodeAbiParameters(
+						[{ type: "int256" }, { type: "address" }],
+						[amount, account.address as Address],
+					),
+				);
+				collateralRemoveCalls.push({
+					to: degenBoxContract.address,
+					data: encodeFunctionData({
+						abi: degenBoxContract.abi,
+						functionName: "withdraw",
+						args: [
+							collateralContract.address,
+							account.address as Address,
+							account.address as Address,
+							0n,
+							amount,
+						],
+					}),
+				});
+			}
 		}
 
 		sendCalls({
