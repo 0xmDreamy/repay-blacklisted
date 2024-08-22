@@ -1,9 +1,16 @@
-import { encodeAbiParameters, encodeFunctionData, parseEther } from "viem";
+import {
+	Address,
+	encodeAbiParameters,
+	encodeFunctionData,
+	Hex,
+	parseEther,
+} from "viem";
 import { useAccount, useConnect, useDisconnect } from "wagmi";
 import { useSendCalls } from "wagmi/experimental";
 import { degenBoxContract } from "./degenBox";
 import { mimContract } from "./mim";
 import { cauldronContract } from "./cauldron";
+import { collateralContract } from "./collateral";
 
 function App() {
 	const account = useAccount();
@@ -15,6 +22,41 @@ function App() {
 		e.preventDefault();
 		const formData = new FormData(e.target as HTMLFormElement);
 		const repayAmount = parseEther(formData.get("repayAmount") as string);
+		const collateralRemoveAmount = formData.get("collateralRemoveAmount") as
+			| string
+			| null;
+		const collateralRemoveActions: number[] = [];
+		const collateralRemoveValues: bigint[] = [];
+		const collateralRemoveDatas: Hex[] = [];
+		const collateralRemoveCalls: {
+			to: Address;
+			data: Hex;
+		}[] = [];
+		if (collateralRemoveAmount) {
+			const amount = parseEther(collateralRemoveAmount);
+			collateralRemoveActions.push(4);
+			collateralRemoveValues.push(0n);
+			collateralRemoveDatas.push(
+				encodeAbiParameters(
+					[{ type: "int256" }, { type: "address" }],
+					[amount, account.address as Address],
+				),
+			);
+			collateralRemoveCalls.push({
+				to: degenBoxContract.address,
+				data: encodeFunctionData({
+					abi: degenBoxContract.abi,
+					functionName: "withdraw",
+					args: [
+						collateralContract.address,
+						account.address as Address,
+						account.address as Address,
+						0n,
+						amount,
+					],
+				}),
+			});
+		}
 
 		sendCalls({
 			calls: [
@@ -46,18 +88,20 @@ function App() {
 						abi: cauldronContract.abi,
 						functionName: "cook",
 						args: [
-							[7, 2],
-							[0n, 0n],
+							[7, 2, ...collateralRemoveActions],
+							[0n, 0n, ...collateralRemoveValues],
 							[
 								encodeAbiParameters([{ type: "int256" }], [repayAmount]),
 								encodeAbiParameters(
 									[{ type: "int256" }, { type: "address" }, { type: "bool" }],
-									[-1n, account.address!, true],
+									[-1n, account.address as Address, true],
 								),
+								...collateralRemoveDatas,
 							],
 						],
 					}),
 				},
+				...collateralRemoveCalls,
 			],
 		});
 	}
@@ -95,7 +139,16 @@ function App() {
 			</div>
 			{account.status === "connected" && (
 				<form onSubmit={submit}>
+					<label htmlFor="repayAmount">Repay Amount:</label>
+					<br />
 					<input name="repayAmount" placeholder="0.05" required />
+					<br />
+					<label htmlFor="collateralRemoveAmount">
+						Collateral Remove Amount:
+					</label>
+					<br />
+					<input name="collateralRemoveAmount" placeholder="0.05" />
+					<br />
 					<button type="submit">Send Batch</button>
 				</form>
 			)}
