@@ -18,7 +18,7 @@ import {
 	VStack,
 } from "@chakra-ui/react";
 import { useAccount, useConnect, useDisconnect } from "wagmi";
-import { useSendCalls } from "wagmi/experimental";
+import { useCapabilities, useSendCalls } from "wagmi/experimental";
 import { degenBoxContract } from "./degenBox";
 import { mimContract } from "./mim";
 import { cauldronContract } from "./cauldron";
@@ -29,11 +29,13 @@ function App() {
 	const account = useAccount();
 	const { connectors, connect } = useConnect();
 	const { disconnect } = useDisconnect();
-	const { sendCalls, data } = useSendCalls();
+	const { data: capabilities } = useCapabilities();
+	const { sendCallsAsync, data } = useSendCalls();
 	const [repayAmount, setRepayAmount] = useState("");
 	const [collateralRemoveAmount, setCollateralRemoveAmount] = useState("");
+	const [pendingWalletUserAction, setPendingWalletUserAction] = useState(false);
 
-	async function submit(e: React.FormEvent<HTMLFormElement>) {
+	function submit(e: React.FormEvent<HTMLFormElement>) {
 		e.preventDefault();
 		const repayActions: number[] = [];
 		const repayValues: bigint[] = [];
@@ -115,7 +117,8 @@ function App() {
 			}
 		}
 
-		sendCalls({
+		setPendingWalletUserAction(true);
+		sendCallsAsync({
 			calls: [
 				...repayCalls,
 				{
@@ -132,7 +135,9 @@ function App() {
 				},
 				...collateralRemoveCalls,
 			],
-		});
+		})
+			.catch(() => {})
+			.finally(() => setPendingWalletUserAction(false));
 	}
 
 	return (
@@ -197,10 +202,15 @@ function App() {
 									width="100%"
 									mt={2}
 									isDisabled={
-										repayAmount === "" && collateralRemoveAmount === ""
+										(repayAmount === "" && collateralRemoveAmount === "") ||
+										capabilities?.[1]?.atomicBatch?.supported !== true ||
+										pendingWalletUserAction
 									}
+									isLoading={pendingWalletUserAction}
 								>
-									Send Batch
+									{capabilities?.[1]?.atomicBatch?.supported === true
+										? "Send Batch"
+										: "Unsupported Wallet"}
 								</Button>
 							</form>
 						)}
