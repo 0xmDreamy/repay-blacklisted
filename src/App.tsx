@@ -23,20 +23,61 @@ import { degenBoxContract } from "./degenBox";
 import { mimContract } from "./mim";
 import { cauldronContract } from "./cauldron";
 import { collateralContract } from "./collateral";
+import { useState } from "react";
 
 function App() {
 	const account = useAccount();
 	const { connectors, connect } = useConnect();
 	const { disconnect } = useDisconnect();
 	const { sendCalls, data } = useSendCalls();
+	const [repayAmount, setRepayAmount] = useState("");
+	const [collateralRemoveAmount, setCollateralRemoveAmount] = useState("");
 
 	async function submit(e: React.FormEvent<HTMLFormElement>) {
 		e.preventDefault();
-		const formData = new FormData(e.target as HTMLFormElement);
-		const repayAmount = parseEther(formData.get("repayAmount") as string);
-		const collateralRemoveAmount = formData.get("collateralRemoveAmount") as
-			| string
-			| null;
+		const repayActions: number[] = [];
+		const repayValues: bigint[] = [];
+		const repayDatas: Hex[] = [];
+		const repayCalls: {
+			to: Address;
+			data: Hex;
+		}[] = [];
+		if (repayAmount !== "") {
+			const amount = parseEther(repayAmount);
+			repayActions.push(7, 2);
+			repayValues.push(0n, 0n);
+			repayDatas.push(
+				encodeAbiParameters([{ type: "int256" }], [amount]),
+				encodeAbiParameters(
+					[{ type: "int256" }, { type: "address" }, { type: "bool" }],
+					[-1n, account.address as Address, true],
+				),
+			);
+
+			repayCalls.push({
+				to: mimContract.address,
+				data: encodeFunctionData({
+					abi: mimContract.abi,
+					functionName: "transfer",
+					args: [degenBoxContract.address, amount],
+				}),
+			});
+			repayCalls.push({
+				to: "0xd96f48665a1410C0cd669A88898ecA36B9Fc2cce",
+				data: encodeFunctionData({
+					abi: degenBoxContract.abi,
+					functionName: "deposit",
+					args: [
+						mimContract.address,
+						degenBoxContract.address,
+						degenBoxContract.address,
+						amount,
+						0n,
+					],
+				}),
+			});
+		}
+
 		const collateralRemoveActions: number[] = [];
 		const collateralRemoveValues: bigint[] = [];
 		const collateralRemoveDatas: Hex[] = [];
@@ -44,7 +85,7 @@ function App() {
 			to: Address;
 			data: Hex;
 		}[] = [];
-		if (collateralRemoveAmount) {
+		if (collateralRemoveAmount !== "") {
 			const amount = parseEther(collateralRemoveAmount);
 			collateralRemoveActions.push(4);
 			collateralRemoveValues.push(0n);
@@ -72,44 +113,16 @@ function App() {
 
 		sendCalls({
 			calls: [
-				{
-					to: mimContract.address,
-					data: encodeFunctionData({
-						abi: mimContract.abi,
-						functionName: "transfer",
-						args: [degenBoxContract.address, repayAmount],
-					}),
-				},
-				{
-					to: "0xd96f48665a1410C0cd669A88898ecA36B9Fc2cce",
-					data: encodeFunctionData({
-						abi: degenBoxContract.abi,
-						functionName: "deposit",
-						args: [
-							mimContract.address,
-							degenBoxContract.address,
-							degenBoxContract.address,
-							repayAmount,
-							0n,
-						],
-					}),
-				},
+				...repayCalls,
 				{
 					to: cauldronContract.address,
 					data: encodeFunctionData({
 						abi: cauldronContract.abi,
 						functionName: "cook",
 						args: [
-							[7, 2, ...collateralRemoveActions],
-							[0n, 0n, ...collateralRemoveValues],
-							[
-								encodeAbiParameters([{ type: "int256" }], [repayAmount]),
-								encodeAbiParameters(
-									[{ type: "int256" }, { type: "address" }, { type: "bool" }],
-									[-1n, account.address as Address, true],
-								),
-								...collateralRemoveDatas,
-							],
+							[...repayActions, ...collateralRemoveActions],
+							[...repayValues, ...collateralRemoveValues],
+							[...repayDatas, ...collateralRemoveDatas],
 						],
 					}),
 				},
@@ -158,22 +171,39 @@ function App() {
 						</Box>
 						{account.status === "connected" && (
 							<form onSubmit={submit}>
-								<FormControl id="repayAmount" isRequired mt={2}>
+								<FormControl id="repayAmount" mt={2}>
 									<FormLabel>Repay Amount</FormLabel>
-									<Input name="repayAmount" placeholder="0.05" />
+									<Input
+										name="repayAmount"
+										placeholder="0.05"
+										onChange={(e) => setRepayAmount(e.target.value)}
+									/>
 								</FormControl>
 								<FormControl id="collateralRemoveAmount" mt={2}>
 									<FormLabel>Collateral Remove Amount</FormLabel>
-									<Input name="collateralRemoveAmount" placeholder="0.05" />
+									<Input
+										name="collateralRemoveAmount"
+										placeholder="0.05"
+										onChange={(e) => setCollateralRemoveAmount(e.target.value)}
+									/>
 								</FormControl>
-								<Button type="submit" colorScheme="blue" width="100%" mt={2}>
+								<Button
+									type="submit"
+									colorScheme="blue"
+									width="100%"
+									mt={2}
+									isDisabled={
+										repayAmount === "" && collateralRemoveAmount === ""
+									}
+								>
 									Send Batch
 								</Button>
 							</form>
 						)}
 
 						{data !== undefined && <Text mt={2}>{data}</Text>}
-						{account.status === "disconnected" && (
+						{(account.status === "disconnected" ||
+							account.status === "connecting") && (
 							<>
 								{connectors
 									.filter(({ name }) => name === "WalletConnect")
@@ -184,6 +214,8 @@ function App() {
 											key={connector.uid}
 											onClick={() => connect({ connector })}
 											mt={2}
+											isDisabled={account.status === "connecting"}
+											isLoading={account.status === "connecting"}
 										>
 											{connector.name}
 										</Button>
